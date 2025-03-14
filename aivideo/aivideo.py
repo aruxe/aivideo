@@ -2,6 +2,9 @@ from flask import Flask, render_template, request
 import time
 import base64
 from runwayml import RunwayML
+import inspect
+signature = inspect.signature(function)
+
 
 app = Flask(__name__)
 
