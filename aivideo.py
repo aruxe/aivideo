@@ -26,7 +26,7 @@ def index():
         task_id = task.id
 
         # Poll the task until it's complete
-        time.sleep(10)
+        time.sleep(5)
         task = client.tasks.retrieve(task_id)
         while task.status not in ['SUCCEEDED', 'FAILED']:
             time.sleep(10)
