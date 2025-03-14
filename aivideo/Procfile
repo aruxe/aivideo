@@ -1,1 +1,1 @@
-web: gunicorn python.py:app
+web: gunicorn aivideo.py:app
