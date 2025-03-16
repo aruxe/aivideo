@@ -35,7 +35,6 @@
         }
         video {
             width: 100%;
-            border-radius: 10px;
             margin-top: 20px;
         }
         .download-link {
@@ -44,15 +43,50 @@
             margin-top: 20px;
             font-size: 18px;
         }
-        .hidden {
-            display: none;
+        .loader {
+            display: none; /* Hidden by default */
+            text-align: center;
+            margin-top: 20px;
+        }
+        /* Loader animation from Uiverse.io */
+        .loader svg {
+            width: 3.25em;
+            transform-origin: center;
+            animation: rotate4 2s linear infinite;
+        }
+        .loader circle {
+            fill: none;
+            stroke: hsl(214, 97%, 59%);
+            stroke-width: 2;
+            stroke-dasharray: 1, 200;
+            stroke-dashoffset: 0;
+            stroke-linecap: round;
+            animation: dash4 1.5s ease-in-out infinite;
+        }
+        @keyframes rotate4 {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        @keyframes dash4 {
+            0% {
+                stroke-dasharray: 1, 200;
+                stroke-dashoffset: 0;
+            }
+            50% {
+                stroke-dasharray: 90, 200;
+                stroke-dashoffset: -35px;
+            }
+            100% {
+                stroke-dashoffset: -125px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>AI Video Generator</h1>
-        <form action="/" method="post" enctype="multipart/form-data">
+        <form id="video-form">
             <div class="mb-3">
                 <label for="image" class="form-label">Upload Image:</label>
                 <input type="file" class="form-control" name="image" id="image" required>
@@ -62,31 +96,67 @@
                 <input type="text" class="form-control" name="prompt" id="prompt" required>
             </div>
             <button type="submit" class="btn btn-primary">Generate Video</button>
-            <mark>Uppdatera inte sidan när filmen genereras</mark>
         </form>
 
-        {% if video_url %}
-        <div id="video-section">
+        <!-- Loader -->
+        <div class="loader" id="loader">
+            <svg viewBox="0 0 50 50">
+                <circle cx="25" cy="25" r="20"></circle>
+            </svg>
+            <p>Generating video...</p>
+        </div>
+
+        <!-- Video section -->
+        <div id="video-section" style="display: none;">
             <h2>Generated Video</h2>
-            <video controls>
-                <source src="{{ video_url }}" type="video/mp4">
+            <video controls id="generated-video">
                 Your browser does not support the video tag.
             </video>
-            <a href="{{ video_url }}" download class="download-link btn btn-primary">Download Video</a>
+            <a id="download-link" class="download-link btn btn-primary" target="_blank" download>
+                Download Video
+            </a>
         </div>
-        {% endif %}
     </div>
+
     <script>
-        // Automatically download the video when the button is clicked
-        document.getElementById('download-button')?.addEventListener('click', function() {
-            const videoUrl = "{{ video_url }}";
-            if (videoUrl) {
-                const link = document.createElement('a');
-                link.href = videoUrl;
-                link.download = 'generated-video.mp4'; // Set the download filename
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+        document.getElementById('video-form').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent the form from submitting traditionally
+
+            const formData = new FormData(this);
+            const loader = document.getElementById('loader');
+            const videoSection = document.getElementById('video-section');
+            const videoElement = document.getElementById('generated-video');
+            const downloadLink = document.getElementById('download-link');
+
+            // Show loader
+            loader.style.display = 'block';
+            videoSection.style.display = 'none';
+
+            try {
+                // Send form data to server using AJAX
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error('Video generation failed');
+                }
+
+                const data = await response.json();
+
+                // Show video
+                videoElement.src = data.video_url;
+                videoSection.style.display = 'block';
+
+                // Update download link
+                downloadLink.href = data.video_url;
+                downloadLink.download = 'generated-video.mp4'; // Optional: Set a custom filename
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                // Hide loader
+                loader.style.display = 'none';
             }
         });
     </script>
