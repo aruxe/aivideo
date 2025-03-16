@@ -6,7 +6,7 @@ from runwayml import RunwayML
 app = Flask(__name__)
 
 # Test mode flag
-TEST_MODE = True  # Set to False to use the real API
+TEST_MODE = False  # Set to False to use the real API
 
 client = RunwayML()
 
