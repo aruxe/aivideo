@@ -1,20 +1,33 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify, url_for
 import time
 import base64
 from runwayml import RunwayML
 
 app = Flask(__name__)
 
+# Test mode flag
+TEST_MODE = True  # Set to False to use the real API
+
 client = RunwayML()
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET'])
 def index():
-    video_url = None
-    if request.method == 'POST' and 'image' in request.files:
-        image_file = request.files['image']
-        prompt_text = request.form['prompt']
+    return render_template('index.html')
 
-        # Encode image to base64
+@app.route('/generate', methods=['POST'])
+def generate():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image uploaded'}), 400
+
+    image_file = request.files['image']
+    prompt_text = request.form['prompt']
+
+    if TEST_MODE:
+        time.sleep(10)
+        # Simulate API response in test mode
+        video_url = url_for('static', filename='videos/test.mp4')
+    else:
+        # Use the real API
         base64_image = base64.b64encode(image_file.read()).decode("utf-8")
 
         # Create a new image-to-video task
@@ -34,8 +47,10 @@ def index():
 
         if task.status == 'SUCCEEDED':
             video_url = task.output[0]
+        else:
+            return jsonify({'error': 'Video generation failed'}), 500
 
-    return render_template('index.html', video_url=video_url)
+    return jsonify({'video_url': video_url})
 
 if __name__ == '__main__':
     app.run(debug=True)
